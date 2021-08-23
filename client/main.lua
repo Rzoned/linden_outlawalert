@@ -1,5 +1,6 @@
 notLoaded, currentStreetName, intersectStreetName, lastStreet, speedlimit, nearbyPeds, isPlayerWhitelisted, playerPed, playerCoords, job, rank, firstname, lastname, phone = true
 local canSendDistress  = true
+local onDuty = false
 -- Framework Stuff ---------------------------------------------------------------
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded')
@@ -15,8 +16,15 @@ end)
 
 RegisterNetEvent('QBCore:Client:OnJobUpdate')
 AddEventHandler('QBCore:Client:OnJobUpdate', function(JobInfo)
-    PlayerData.job = JobInfo
+    PlayerJob = JobInfo
+    onDuty = PlayerJob.onduty
 end)
+
+RegisterNetEvent('QBCore:Client:SetDuty')
+AddEventHandler('QBCore:Client:SetDuty', function(duty)
+    onDuty = duty
+end)
+
 
 -- Framework Stuff ---------------------------------------------------------------
 
@@ -193,7 +201,7 @@ AddEventHandler('wf-alerts:clNotify', function(pData)
 	if pData ~= nil then
 		local sendit = false
 		for i=1, #pData.recipientList do
-			if pData.recipientList[i] == PlayerData.job.name then sendit = true break end
+			if pData.recipientList[i] == PlayerData.job.name and onDuty then sendit = true break end
 		end
 		if sendit then
 			Citizen.Wait(1500)
@@ -324,7 +332,7 @@ RegisterCommand('alert_dead', function()
 		local name = ('%s %s'):format(firstname, lastname)
 		local title = ('%s %s'):format(rank, lastname)
 		refreshPlayerWhitelisted()
-		if isPlayerWhitelisted then
+		if isPlayerWhitelisted and onDuty then
 			Citizen.Wait(2000)
 			data = {dispatchCode = 'officerdown', caller = name, coords = playerCoords, netId = netId, info = title, length = 10000}
 			TriggerServerEvent('wf-alerts:svNotify', data)
@@ -342,7 +350,7 @@ end, false)
 
 RegisterKeyMapping('alert_dead', 'Send distress signal to Police/EMS', 'keyboard', 'G')
 
-RegisterCommand('911', function(playerId, args, rawCommand)
+--[[RegisterCommand('911', function(playerId, args, rawCommand)
 	if not args[1] then QBCore.Functions.Notify('You must include a message with your 911 call', 'error') return end
 	args = table.concat(args, ' ')
 	local caller
@@ -360,4 +368,4 @@ RegisterCommand('911a', function(playerId, args, rawCommand)
 		TriggerServerEvent('wf-alerts:svNotify911', args, _U('caller_unknown'), playerCoords)
 	end
 	QBCore.Functions.Notify('The Authorities Have Been Notified', 'success')
-end, false)
+end, false)]]
